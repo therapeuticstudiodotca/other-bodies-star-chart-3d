@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Other Bodies — 3D Emotion Space</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #04040f; font-family: sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px; }
+h1 { color: rgba(255,255,255,0.75); font-size: 15px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; text-align: center; }
+p.sub { color: rgba(255,255,255,0.35); font-size: 11px; margin-bottom: 16px; text-align: center; letter-spacing: 0.05em; }
+#wrap { width: 100%; max-width: 980px; }
+footer { margin-top: 14px; font-size: 10px; color: rgba(255,255,255,0.2); text-align: center; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>Other Bodies — 3D Emotion Space</h1>
+  <p class="sub">52 feelings mapped across activation, orientation & permeability · Make Space · therapeuticstudio.ca</p>
+
+  <div style="background:#070712;border-radius:12px;overflow:hidden;width:100%;">
+    <canvas id="c3d" style="display:block;width:100%;cursor:grab;"></canvas>
+    <div id="card3d" style="display:none;margin:0;padding:14px 16px;background:#0d0d24;border-top:0.5px solid rgba(255,255,255,0.12);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+        <div>
+          <div id="c3d-feeling" style="font-size:15px;font-weight:500;color:#fff;margin-bottom:3px;"></div>
+          <div id="c3d-body" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;opacity:0.55;"></div>
+          <div id="c3d-dims" style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap;"></div>
+        </div>
+        <button onclick="document.getElementById('card3d').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;flex-shrink:0;padding:0;">&#x2715;</button>
+      </div>
+      <div id="c3d-constellation" style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;text-transform:uppercase;padding-top:10px;border-top:0.5px solid rgba(255,255,255,0.08);"></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px;border-top:0.5px solid rgba(255,255,255,0.08);">
+      <span style="font-size:11px;color:rgba(255,255,255,0.4);margin-right:4px;align-self:center;">Constellation:</span>
+      <div id="legend3d" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+    <div style="display:flex;gap:0;border-top:0.5px solid rgba(255,255,255,0.08);">
+      <div style="flex:1;padding:10px 14px;border-right:0.5px solid rgba(255,255,255,0.08);">
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">X — Activation</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);">Still ← → Activated</div>
+      </div>
+      <div style="flex:1;padding:10px 14px;border-right:0.5px solid rgba(255,255,255,0.08);">
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">Y — Orientation</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);">Inward ← → Outward</div>
+      </div>
+      <div style="flex:1;padding:10px 14px;">
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">Z — Permeability</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);">Contracted ← → Permeable</div>
+      </div>
+    </div>
+    <div style="padding:8px 14px;border-top:0.5px solid rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.3);text-align:center;">
+      Drag to rotate · Scroll to zoom · Click a star to read its feeling
+    </div>
+  </div>
+</div>
+
+<footer>Inspired by Shauna Kaendo &amp; Erotics of Liberation · Part of the Make Space year-long practice</footer>
+
+<script>
+const emotions = [
+  {name:"I feel ashamed.",    body:"The Octopus",           con:"Protective States",       color:"#4a7fd4", act:0.2,  ori:0.15, per:0.15},
+  {name:"I feel afraid.",     body:"The Cave",              con:"Protective States",       color:"#4a7fd4", act:0.15, ori:0.2,  per:0.12},
+  {name:"I feel numb.",       body:"Permafrost",            con:"Protective States",       color:"#4a7fd4", act:0.05, ori:0.15, per:0.08},
+  {name:"I feel withdrawn.",  body:"The Tide Pool",         con:"Protective States",       color:"#4a7fd4", act:0.1,  ori:0.1,  per:0.12},
+  {name:"I feel guarded.",    body:"The Pine Cone",         con:"Protective States",       color:"#4a7fd4", act:0.12, ori:0.12, per:0.1 },
+  {name:"I feel grief.",      body:"Moss",                  con:"Heavy States",            color:"#38b8cc", act:0.2,  ori:0.35, per:0.3 },
+  {name:"I feel sad.",        body:"Rain on Still Water",   con:"Heavy States",            color:"#38b8cc", act:0.18, ori:0.25, per:0.28},
+  {name:"I feel exhausted.",  body:"The River Delta",       con:"Heavy States",            color:"#38b8cc", act:0.1,  ori:0.3,  per:0.22},
+  {name:"I feel despair.",    body:"The Dormant Volcano",   con:"Heavy States",            color:"#38b8cc", act:0.08, ori:0.2,  per:0.15},
+  {name:"I feel heaviness.",  body:"Clay Soil After Rain",  con:"Heavy States",            color:"#38b8cc", act:0.08, ori:0.22, per:0.18},
+  {name:"I feel lonely.",     body:"Bioluminescent Ocean",  con:"Relational States",       color:"#2ec87a", act:0.2,  ori:0.45, per:0.25},
+  {name:"I feel tender.",     body:"Mycelium",              con:"Relational States",       color:"#2ec87a", act:0.22, ori:0.6,  per:0.55},
+  {name:"I feel longing.",    body:"Migratory Bird",        con:"Relational States",       color:"#2ec87a", act:0.35, ori:0.55, per:0.38},
+  {name:"I feel love.",       body:"River to the Sea",      con:"Relational States",       color:"#2ec87a", act:0.4,  ori:0.7,  per:0.65},
+  {name:"I feel jealous.",    body:"Plant at the Window",   con:"Relational States",       color:"#2ec87a", act:0.38, ori:0.5,  per:0.3 },
+  {name:"I feel betrayed.",   body:"Soil After Wildfire",   con:"Relational States",       color:"#2ec87a", act:0.3,  ori:0.4,  per:0.2 },
+  {name:"I feel angry.",      body:"River in Flood",        con:"Activated States",        color:"#8cd957", act:0.9,  ori:0.45, per:0.35},
+  {name:"I feel anxious.",    body:"A Murmuration",         con:"Activated States",        color:"#8cd957", act:0.8,  ori:0.35, per:0.3 },
+  {name:"I feel urgent.",     body:"Salmon Upstream",       con:"Activated States",        color:"#8cd957", act:0.88, ori:0.5,  per:0.42},
+  {name:"I feel frustrated.", body:"Water at a Blocked Path",con:"Activated States",      color:"#8cd957", act:0.65, ori:0.35, per:0.25},
+  {name:"I feel restless.",   body:"The Tides",             con:"Activated States",        color:"#8cd957", act:0.7,  ori:0.4,  per:0.35},
+  {name:"I feel doubt.",      body:"Young Tree in Wind",    con:"Self-Directed States",    color:"#ffc85a", act:0.4,  ori:0.2,  per:0.25},
+  {name:"I feel inadequate.", body:"Lichen on Bare Rock",   con:"Self-Directed States",    color:"#ffc85a", act:0.22, ori:0.18, per:0.2 },
+  {name:"I feel proud.",      body:"Tree in Full Canopy",   con:"Self-Directed States",    color:"#ffc85a", act:0.45, ori:0.5,  per:0.55},
+  {name:"I feel regret.",     body:"River's Old Course",    con:"Self-Directed States",    color:"#ffc85a", act:0.28, ori:0.22, per:0.28},
+  {name:"I feel guilty.",     body:"Meadow After Storm",    con:"Self-Directed States",    color:"#ffc85a", act:0.42, ori:0.3,  per:0.3 },
+  {name:"I feel joy.",        body:"Wildflowers After Rain",con:"Expansive States",        color:"#ff8833", act:0.72, ori:0.75, per:0.82},
+  {name:"I feel wonder.",     body:"Whale Song",            con:"Expansive States",        color:"#ff8833", act:0.5,  ori:0.85, per:0.88},
+  {name:"I feel grateful.",   body:"Autumn Tree",           con:"Expansive States",        color:"#ff8833", act:0.38, ori:0.8,  per:0.75},
+  {name:"I feel awe.",        body:"Edge of the Canyon",    con:"Expansive States",        color:"#ff8833", act:0.45, ori:0.9,  per:0.92},
+  {name:"I feel curious.",    body:"Root Through Rock",     con:"Expansive States",        color:"#ff8833", act:0.6,  ori:0.7,  per:0.7 },
+  {name:"I feel excited.",    body:"The Waggle Dance Bee",  con:"Expansive States",        color:"#ff8833", act:0.85, ori:0.72, per:0.65},
+  {name:"I feel still.",      body:"Deep Lake in Winter",   con:"Tender + Quiet States",   color:"#ff6b6b", act:0.05, ori:0.3,  per:0.45},
+  {name:"I feel peaceful.",   body:"Meadow After Rain",     con:"Tender + Quiet States",   color:"#ff6b6b", act:0.08, ori:0.45, per:0.6 },
+  {name:"I feel content.",    body:"Bear in Late Autumn",   con:"Tender + Quiet States",   color:"#ff6b6b", act:0.12, ori:0.5,  per:0.62},
+  {name:"I feel safe.",       body:"Old Growth Forest",     con:"Tender + Quiet States",   color:"#ff6b6b", act:0.1,  ori:0.55, per:0.68},
+  {name:"I feel belonging.",  body:"River in Its Watershed",con:"Tender + Quiet States",   color:"#ff6b6b", act:0.15, ori:0.65, per:0.72},
+  {name:"I feel ambivalent.", body:"The Estuary",           con:"Complex + Mixed States",  color:"#ff6ee8", act:0.45, ori:0.45, per:0.42},
+  {name:"I feel overwhelmed.",body:"Forest Floor in Snow",  con:"Complex + Mixed States",  color:"#ff6ee8", act:0.62, ori:0.3,  per:0.22},
+  {name:"I feel confused.",   body:"Fog in the Valley",     con:"Complex + Mixed States",  color:"#ff6ee8", act:0.3,  ori:0.35, per:0.35},
+  {name:"I feel hopeful.",    body:"Green Shoot",           con:"Complex + Mixed States",  color:"#ff6ee8", act:0.48, ori:0.65, per:0.62},
+  {name:"I feel disappointed.",body:"Field After Harvest",  con:"Complex + Mixed States",  color:"#ff6ee8", act:0.22, ori:0.4,  per:0.32},
+  {name:"I feel nostalgic.",  body:"The Hollow Ancient Tree",con:"Complex + Mixed States", color:"#ff6ee8", act:0.18, ori:0.5,  per:0.45},
+  {name:"I feel forgiving.",  body:"River Smoothing Stone", con:"Relational Repair States",color:"#c87ae8", act:0.3,  ori:0.65, per:0.62},
+  {name:"I feel vulnerable.", body:"Hermit Crab",           con:"Relational Repair States",color:"#c87ae8", act:0.42, ori:0.55, per:0.55},
+  {name:"I feel trusting.",   body:"Seed to the Wind",      con:"Relational Repair States",color:"#c87ae8", act:0.35, ori:0.7,  per:0.7 },
+  {name:"I feel repaired.",   body:"The Eagle's Nest",      con:"Relational Repair States",color:"#c87ae8", act:0.28, ori:0.6,  per:0.6 },
+  {name:"I feel uncertain.",  body:"Shoreline at Dusk",     con:"Existential + Threshold", color:"#7a55e0", act:0.32, ori:0.5,  per:0.55},
+  {name:"I feel changed.",    body:"Forest in Succession",  con:"Existential + Threshold", color:"#7a55e0", act:0.38, ori:0.6,  per:0.6 },
+  {name:"I feel grief for the world.",body:"Glacier in Retreat",con:"Existential + Threshold",color:"#7a55e0", act:0.25, ori:0.85, per:0.65},
+  {name:"I feel the ache of not yet.",body:"Bud in Late Winter",con:"Existential + Threshold",color:"#7a55e0", act:0.28, ori:0.55, per:0.48},
+  {name:"I feel alive.",      body:"The Germinating Seed",  con:"Existential + Threshold", color:"#7a55e0", act:0.75, ori:0.75, per:0.88}
+];
+
+const canvas = document.getElementById('c3d');
+const ctx = canvas.getContext('2d');
+const W = 700, H = 500;
+canvas.width = W; canvas.height = H;
+
+let rotX = 0.35, rotY = -0.5, zoom = 1;
+let dragging = false, lastMouse = null;
+let hovered = null, filterCon = null, autoRot = true;
+
+function project(ax, ay, az) {
+  const cosX=Math.cos(rotX),sinX=Math.sin(rotX),cosY=Math.cos(rotY),sinY=Math.sin(rotY);
+  const y1=ay*cosX-az*sinX, z1=ay*sinX+az*cosX;
+  const x2=ax*cosY+z1*sinY, z2=-ax*sinY+z1*cosY;
+  const fov=2.8*zoom, sc=fov/(fov+z2);
+  return {sx:x2*sc*W*0.38+W/2, sy:y1*sc*H*0.38+H/2, scale:sc, z:z2};
+}
+
+function emotionCoords(e) {
+  return {ax:(e.act-0.5)*2, ay:-(e.per-0.5)*2, az:(e.ori-0.5)*2};
+}
+
+function hexToRgb(hex) {
+  return {r:parseInt(hex.slice(1,3),16),g:parseInt(hex.slice(3,5),16),b:parseInt(hex.slice(5,7),16)};
+}
+
+function drawStar(cx, cy, outerR, innerR, points, color, alpha, isHov) {
+  const rgb = hexToRgb(color);
+  const step = Math.PI / points;
+  if (isHov) {
+    for (let ring = 3; ring >= 1; ring--) {
+      ctx.beginPath();
+      for (let i = 0; i < points * 2; i++) {
+        const angle = i * step - Math.PI/2;
+        const r = (i%2===0) ? outerR + ring*5 : innerR + ring*2;
+        i===0 ? ctx.moveTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r)
+              : ctx.lineTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r);
+      }
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${0.07*ring})`;
+      ctx.fill();
+    }
+  } else {
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const angle = i * step - Math.PI/2;
+      const r = (i%2===0) ? outerR + 3 : innerR + 1;
+      i===0 ? ctx.moveTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r)
+            : ctx.lineTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r);
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.15)`;
+    ctx.fill();
+  }
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const angle = i * step - Math.PI/2;
+    const r = (i%2===0) ? outerR : innerR;
+    i===0 ? ctx.moveTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r)
+          : ctx.lineTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r);
+  }
+  ctx.closePath();
+  const g = ctx.createRadialGradient(cx-outerR*0.3, cy-outerR*0.3, 0, cx, cy, outerR);
+  g.addColorStop(0, `rgba(255,255,255,${alpha})`);
+  g.addColorStop(0.4, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`);
+  g.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha*0.5})`);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR*0.22, 0, Math.PI*2);
+  ctx.fillStyle = `rgba(255,255,255,${alpha*0.9})`;
+  ctx.fill();
+}
+
+function getProjected() {
+  return emotions.map(e => {
+    const {ax,ay,az}=emotionCoords(e);
+    const p=project(ax,ay,az);
+    return {...e,...p,ax,ay,az};
+  }).sort((a,b)=>a.z-b.z);
+}
+
+function drawAxes() {
+  const axes = [
+    {from:[-1,0,0],to:[1,0,0],lo:'Still',hi:'Activated'},
+    {from:[0,1,0],to:[0,-1,0],lo:'Permeable',hi:'Contracted'},
+    {from:[0,0,-1],to:[0,0,1],lo:'Inward',hi:'Outward'}
+  ];
+  axes.forEach(ax => {
+    const p0=project(...ax.from), p1=project(...ax.to);
+    ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=0.7;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath(); ctx.moveTo(p0.sx,p0.sy); ctx.lineTo(p1.sx,p1.sy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='10px sans-serif'; ctx.fillStyle='rgba(255,255,255,0.32)'; ctx.textAlign='center';
+    ctx.fillText(ax.lo, p0.sx, p0.sy-9);
+    ctx.fillText(ax.hi, p1.sx, p1.sy+15);
+  });
+}
+
+let animFrame;
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#070712'; ctx.fillRect(0,0,W,H);
+  const sr=(s)=>{let v=s;return()=>{v=(v*16807)%2147483647;return(v-1)/2147483646;};};
+  const r=sr(42);
+  for(let i=0;i<200;i++){
+    const bri=r();
+    ctx.beginPath();
+    if(bri>0.92){
+      const x=r()*W,y=r()*H,sz=0.8+r()*1.2;
+      ctx.moveTo(x,y-sz*2.2); ctx.lineTo(x+sz*0.4,y-sz*0.4);
+      ctx.lineTo(x+sz*2.2,y); ctx.lineTo(x+sz*0.4,y+sz*0.4);
+      ctx.lineTo(x,y+sz*2.2); ctx.lineTo(x-sz*0.4,y+sz*0.4);
+      ctx.lineTo(x-sz*2.2,y); ctx.lineTo(x-sz*0.4,y-sz*0.4);
+      ctx.closePath();
+      ctx.fillStyle=`rgba(255,255,255,${0.3+r()*0.4})`; ctx.fill();
+    } else {
+      ctx.arc(r()*W,r()*H,0.3+r()*0.7,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,255,255,${0.08+r()*0.3})`; ctx.fill();
+    }
+  }
+  drawAxes();
+  const proj=getProjected();
+  proj.forEach(e=>{
+    const faded=filterCon && e.con!==filterCon;
+    const isHov=hovered===e;
+    const baseR=4.5;
+    const outerR=(baseR+1)*e.scale*1.9;
+    const innerR=outerR*0.42;
+    const alpha=faded?0.12:1;
+    drawStar(e.sx,e.sy,outerR,innerR,4,e.color,alpha,isHov&&!faded);
+    if(!faded){
+      const label=e.name.replace('I feel ','').replace('.','');
+      const cap=label.charAt(0).toUpperCase()+label.slice(1);
+      const fs=Math.max(9,10*e.scale);
+      ctx.font=`${isHov?'500 ':''}${fs}px sans-serif`;
+      ctx.textAlign='center';
+      const rgb=hexToRgb(e.color);
+      ctx.fillStyle=isHov?`rgba(${rgb.r},${rgb.g},${rgb.b},1)`:`rgba(${rgb.r},${rgb.g},${rgb.b},0.8)`;
+      ctx.fillText(cap,e.sx,e.sy+outerR+13);
+    }
+  });
+}
+
+function scheduleRender(){cancelAnimationFrame(animFrame);animFrame=requestAnimationFrame(draw);}
+
+function getHovered(mx,my){
+  const proj=getProjected();
+  for(let i=proj.length-1;i>=0;i--){
+    const e=proj[i];
+    if(filterCon&&e.con!==filterCon) continue;
+    const outerR=(4.5+1)*e.scale*1.9;
+    const dx=mx-e.sx,dy=my-e.sy;
+    if(Math.sqrt(dx*dx+dy*dy)<outerR+8) return e;
+  }
+  return null;
+}
+
+function coords(evt){
+  const rect=canvas.getBoundingClientRect();
+  return {x:(evt.clientX-rect.left)*(W/rect.width),y:(evt.clientY-rect.top)*(H/rect.height)};
+}
+
+canvas.addEventListener('mousedown',e=>{dragging=true;lastMouse=coords(e);autoRot=false;canvas.style.cursor='grabbing';});
+canvas.addEventListener('mouseup',()=>{dragging=false;canvas.style.cursor='grab';});
+canvas.addEventListener('mouseleave',()=>{dragging=false;hovered=null;scheduleRender();});
+canvas.addEventListener('mousemove',e=>{
+  const {x,y}=coords(e);
+  if(dragging&&lastMouse){rotY+=(x-lastMouse.x)*0.008;rotX+=(y-lastMouse.y)*0.008;lastMouse={x,y};scheduleRender();return;}
+  const h=getHovered(x,y);
+  if(h!==hovered){hovered=h;scheduleRender();}
+  canvas.style.cursor=h?'pointer':'grab';
+});
+canvas.addEventListener('click',e=>{
+  const {x,y}=coords(e);
+  const h=getHovered(x,y);
+  if(!h) return;
+  document.getElementById('c3d-feeling').textContent=h.name;
+  const bodyEl=document.getElementById('c3d-body');
+  bodyEl.textContent=h.body; bodyEl.style.color=h.color;
+  const pct=v=>Math.round(v*100)+'%';
+  document.getElementById('c3d-dims').innerHTML=`
+    <span style="font-size:11px;color:rgba(255,255,255,0.55)">Activation <strong style="color:#fff">${pct(h.act)}</strong></span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.55)">Orientation <strong style="color:#fff">${pct(h.ori)}</strong></span>
+    <span style="font-size:11px;color:rgba(255,255,255,0.55)">Permeability <strong style="color:#fff">${pct(h.per)}</strong></span>`;
+  const conEl=document.getElementById('c3d-constellation');
+  conEl.textContent=h.con; conEl.style.color=h.color;
+  document.getElementById('card3d').style.display='block';
+});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  zoom=Math.max(0.5,Math.min(3,zoom*(e.deltaY<0?1.1:0.91)));
+  scheduleRender();
+},{passive:false});
+
+const legend=document.getElementById('legend3d');
+[...new Set(emotions.map(e=>e.con))].forEach(con=>{
+  const col=emotions.find(e=>e.con===con).color;
+  const btn=document.createElement('button');
+  btn.style.cssText=`background:none;border:0.5px solid ${col}50;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;color:rgba(255,255,255,0.65);`;
+  btn.innerHTML=`<span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;display:inline-block;"></span>${con}`;
+  btn.addEventListener('click',()=>{
+    filterCon=filterCon===con?null:con;
+    [...legend.querySelectorAll('button')].forEach(b=>b.style.opacity='0.5');
+    if(!filterCon)[...legend.querySelectorAll('button')].forEach(b=>b.style.opacity='1');
+    else btn.style.opacity='1';
+    scheduleRender();
+  });
+  legend.appendChild(btn);
+});
+
+function autoRotate(){if(autoRot){rotY+=0.003;scheduleRender();}requestAnimationFrame(autoRotate);}
+autoRotate();
+scheduleRender();
+</script>
+</body>
+</html>
